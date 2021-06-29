@@ -43,6 +43,28 @@ const insertData = async (
   return ttx.id
 }
 
+const issueToken = async (
+  name: string,
+  seed: string,
+  chainId: string,
+  nodeUrl: string
+) => {
+  const params: Transactions.IIssueParams = {
+    quantity: 1,
+    decimals: 0,
+    reissuable: false,
+    fee: 5 * FEE_MULTIPLIER,
+    name,
+    description: 'test-token',
+    chainId
+  }
+
+  const tx = Transactions.issue(params, seed)
+  const ttx = await Transactions.broadcast(tx, nodeUrl)
+  await Transactions.waitForTx(ttx.id, { apiBase: nodeUrl })
+  return ttx.id
+}
+
 yargs(process.argv.slice(2))
   .command(
     'transfer [receiver] [amount] [seed]',
@@ -69,6 +91,29 @@ yargs(process.argv.slice(2))
     },
     (yargs: any) => {
       transfer(yargs.receiver, yargs.amount, yargs.seed, yargs.c, yargs.n)
+        .then((hash) => console.log(`SUCCESS TxHash ${hash}`))
+        .catch((err) => console.log(err))
+    }
+  )
+  .command(
+    'issue [name] [seed]',
+    'Issue NFT token',
+    (yargs: any) => {
+      yargs
+        .positional('name', {
+          describe: 'Token name',
+          type: 'string'
+        })
+        .demandOption('name')
+      yargs
+        .positional('seed', {
+          describe: 'Sender seed',
+          type: 'string'
+        })
+        .demandOption('seed')
+    },
+    (yargs: any) => {
+      issueToken(yargs.name, yargs.seed, yargs.c, yargs.n)
         .then((hash) => console.log(`SUCCESS TxHash ${hash}`))
         .catch((err) => console.log(err))
     }
